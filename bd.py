@@ -45,7 +45,7 @@ def validUserFromDb(data):
     print("userlist %s" % userlist)
     for userid in userlist :
         print("obteniendo datos de bd %s - %s" % (userid, data['id']))
-        if(int(userid) == int(data['id'])):
+        if(userid[0] == data['id']):
             print("el usuario ya existe en la bd")
             isexist = True
     if(isexist):
@@ -57,7 +57,9 @@ def validUserFromDb(data):
     cur.execute(sql, datos)
     conexion.commit()
     print("se agrego el usuario con id %s" % data['id'])
-    
+
+    #cur.execute("DELETE * FROM telegram")
+    #conexion.commit()
     # Cierre de la comunicación con PostgreSQL
     cur.close()
     """
