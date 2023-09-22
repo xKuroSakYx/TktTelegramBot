@@ -75,7 +75,7 @@ def validUserFromDb(data):
     
     # creación del cursor
     cur = conexion.cursor()
-    cur.execute("DROP TABLE telegram")
+    cur.execute("DROP TABLE IF EXISTS telegram")
     conexion.commit()
     conexion.close()
     """
