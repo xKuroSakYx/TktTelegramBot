@@ -93,11 +93,11 @@ def validUserFromDb(data):
     userlist = cur.fetchall()
     for userid, valid in userlist :
         print("el user id %s el valid %s"%(userid, valid))
-        if(userid[0] == data['id']): #and valid[0] == 0):
+        if(userid == data['id'] and valid == 0):
             print("valid %s"%valid)
             return True
         
-        elif(userid[0] == data['id']): #and valid[0] == 1):
+        elif(userid == data['id'] and valid == 1):
             print("valid %s"%valid)
             return False
         else:
