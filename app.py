@@ -236,10 +236,12 @@ def validUserFromDb(data):
             #print("el user id %s el valid %s"%(userid, valid))
             if(userid == data['id'] and valid == 0):
                 #print("valid %s"%valid)
+                conexion.close()
                 return True
             
             elif(userid == data['id'] and valid == 1):
                 #print("valid %s"%valid)
+                conexion.close()
                 return False
             else:
                 sql="insert into telegram(userid, valid) values (%s, 0)"
