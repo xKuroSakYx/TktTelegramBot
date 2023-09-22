@@ -92,6 +92,7 @@ def validUserFromDb(data):
 
     userlist = cur.fetchall()
     for userid, valid in userlist :
+        print("el user id %s el valid %s"%(userid, valid))
         if(userid[0] == data['id']): #and valid[0] == 0):
             print("valid %s"%valid)
             return True
