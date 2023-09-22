@@ -47,9 +47,9 @@ def validUserFromDb(data):
 
     sql="insert into telegram(userid) values (%s)"
     datos=(data['id'],)
-    print("se esta agregando el usuario con id " + data['id'])
+    print("se esta agregando el usuario con id %s" % data['id'])
     cur.execute(sql, datos)
-    print("se agrego el usuario con id " + data['id'])
+    print("se agrego el usuario con id %s" % data['id'])
     
     # Cierre de la comunicación con PostgreSQL
     cur.close()
