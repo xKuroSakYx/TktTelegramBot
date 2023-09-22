@@ -27,9 +27,8 @@ def validUserFromDb(data):
  
     # Conexion al servidor de PostgreSQL
     print('Conectando a la base de datos PostgreSQL...')
-    #conexion = psycopg2.connect(**params)
-    #conexion = pgdb(**params)
-    conexion = pg.DB(host=params.host, user=params.host, passwd=params.host, dbname=params.host)
+    conexion = psycopg2.connect(**params)
+    
     # creación del cursor
     cur = conexion.cursor()
     
