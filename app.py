@@ -136,6 +136,13 @@ def updatebd():
         cur.execute(sql, (user,))
         print("actualizando la base de datos")
         conexion.commit()
+        cur.execute( "SELECT userid, valid FROM telegram" )
+
+        # Recorremos los resultados y los mostramos
+
+        userlist = cur.fetchall()
+        for userid, valid in userlist :
+            print("revisando la lista de los usuarios: %s valid: %s"%(userid, valid))
         # Cierre de la comunicación con PostgreSQL
         conexion.close()
         return {'response: user_updated_ok'}
