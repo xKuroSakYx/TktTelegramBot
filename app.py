@@ -24,6 +24,8 @@ cy="\033[1;36m"
 
 # http://127.0.0.1:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=kalguanchez&group=thekeyoftrueTKT&type=broadcast
 # http://127.0.0.0:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=Davier&group=TktPrueva&type=broadcast
+# http://127.0.0.0:8000/cleandb?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s
+# http://127.0.0.0:8000/updatebd?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=5900098531
 # postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
@@ -49,7 +51,7 @@ async def telegramget():
         valid = validUserFromDb(userdata)
         print("validando desde bd %s"%valid)
         if(valid):
-            return {'response': 'user_ok'}
+            return {'response': 'user_ok', 'data': userdata}
         else:
             return {'response': 'user_exist'}
     else:
@@ -82,6 +84,12 @@ async def telegram():
 
 @app.route('/cleandb', methods=["GET"])
 def cleandb():
+    data = request.get_json()
+    token = data["token"]
+
+    if(_TOKEN_ != token):
+        return "invalid Token"
+    
     try:
         conexion = None
         params = config()
