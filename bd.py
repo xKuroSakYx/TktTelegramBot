@@ -42,11 +42,13 @@ def validUserFromDb(data):
     # Recorremos los resultados y los mostramos
     for userid in cur.fetchall() :
         if(userid == data['id']):
+            print("el usuario ya existe en la bd")
             return False
 
     sql="insert into telegram(userid) values (%s)"
     datos=(int(data['id']))
     cur.execute(sql, datos)
+    print("se agrego el usuario con id " + data['id'])
     
     # Cierre de la comunicación con PostgreSQL
     cur.close()
