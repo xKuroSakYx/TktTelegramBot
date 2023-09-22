@@ -55,6 +55,7 @@ def validUserFromDb(data):
     datos=(data['id'],)
     print("se esta agregando el usuario con id %s" % data['id'])
     cur.execute(sql, datos)
+    conexion.commit()
     print("se agrego el usuario con id %s" % data['id'])
     
     # Cierre de la comunicación con PostgreSQL

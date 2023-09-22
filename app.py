@@ -22,6 +22,7 @@ gr="\033[1;32m"
 cy="\033[1;36m"
 
 # http://127.0.0.1:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=kalguanchez&group=thekeyoftrueTKT&type=broadcast
+# gunicorn --bind 0.0.0.0:8000 app:app
 
 app = Flask(__name__)
 @app.route('/telegram', methods=["GET"])
