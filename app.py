@@ -89,6 +89,29 @@ def cleandb():
     # Cierre de la comunicación con PostgreSQL
     cur.close()
 
+@app.route('/updatebd', methods=["GET"])
+def updatebd():
+    token = request.args.get('token')
+    user = request.args.get('user')
+    if(_TOKEN_ != token):
+        return "invalid Token"
+    
+    conexion = None
+    params = config()
+    #print(params)
+
+    # Conexion al servidor de PostgreSQL
+    print('Conectando a la base de datos PostgreSQL...')
+    conexion = psycopg2.connect(**params)
+    
+    # creación del cursor
+    cur = conexion.cursor()
+    sql = "UPDATE telegram SET valid=1 WHERE userid=%s;"
+    cur.execute(sql, (user,))
+    conexion.commit()
+    # Cierre de la comunicación con PostgreSQL
+    conexion.close()
+
 async def startConnection():
     cpass = configparser.RawConfigParser()
     cpass.read('config.data')

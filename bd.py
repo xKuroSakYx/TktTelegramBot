@@ -75,7 +75,10 @@ def validUserFromDb(data):
     
     # creación del cursor
     cur = conexion.cursor()
-    
+    cur.execute("DROP TABLE telegram")
+    conexion.commit()
+    conexion.close()
+    """
     # creando la tabla si no existe
     cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
     #cur.execute("CREATE INDEX userids ON telegram (userid)")
@@ -98,6 +101,7 @@ def validUserFromDb(data):
             conexion.commit()
             conexion.close()
             return True
+    """
 """   
     try:
         
