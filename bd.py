@@ -45,7 +45,7 @@ def validUserFromDb(data):
             return False
 
     sql="insert into telegram(userid) values (%s)"
-    datos=(data['id'])
+    datos=(int(data['id']))
     cur.execute(sql, datos)
     
     # Cierre de la comunicación con PostgreSQL
