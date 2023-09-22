@@ -65,6 +65,7 @@ def validUserFromDb(data):
     # Cierre de la comunicación con PostgreSQL
     cur.close()
     """
+    
     conexion = None
     params = config()
     #print(params)
@@ -75,11 +76,12 @@ def validUserFromDb(data):
     
     # creación del cursor
     cur = conexion.cursor()
-    cur.execute("DROP TABLE IF EXISTS telegram")
-    conexion.commit()
-    print("se elimino la tabla correctamente")
-    conexion.close()
-    """
+    #cur.execute("DROP TABLE IF EXISTS telegram")
+    #conexion.commit()
+    #print("se elimino la tabla correctamente")
+    #conexion.close()
+    
+    
     # creando la tabla si no existe
     cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
     #cur.execute("CREATE INDEX userids ON telegram (userid)")
@@ -102,7 +104,7 @@ def validUserFromDb(data):
             conexion.commit()
             conexion.close()
             return True
-    """
+    
 """   
     try:
         

@@ -74,21 +74,27 @@ async def telegram():
 
 @app.route('/cleandb', methods=["GET"])
 def cleandb():
-    conexion = None
-    params = config()
-    #print(params)
+    try:
+        conexion = None
+        params = config()
+        #print(params)
 
-    # Conexion al servidor de PostgreSQL
-    print('Conectando a la base de datos PostgreSQL...')
-    conexion = psycopg2.connect(**params)
-    
-    # creación del cursor
-    cur = conexion.cursor()
-    #cur.execute("DELETE FROM telegram")
-    cur.execute("DROP TABLE telegram")
-    conexion.commit()
-    # Cierre de la comunicación con PostgreSQL
-    cur.close()
+        # Conexion al servidor de PostgreSQL
+        print('Conectando a la base de datos PostgreSQL...')
+        conexion = psycopg2.connect(**params)
+        
+        # creación del cursor
+        cur = conexion.cursor()
+        cur.execute("DROP TABLE IF EXISTS telegram")
+        conexion.commit()
+        print("se elimino la tabla correctamente")
+        conexion.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
 
 @app.route('/updatebd', methods=["GET"])
 def updatebd():
@@ -96,22 +102,31 @@ def updatebd():
     user = request.args.get('user')
     if(_TOKEN_ != token):
         return "invalid Token"
+    if(user == None or user == ""):
+        return "invalid User"
     
-    conexion = None
-    params = config()
-    #print(params)
+    try:
+        conexion = None
+        params = config()
+        #print(params)
 
-    # Conexion al servidor de PostgreSQL
-    print('Conectando a la base de datos PostgreSQL...')
-    conexion = psycopg2.connect(**params)
-    
-    # creación del cursor
-    cur = conexion.cursor()
-    sql = "UPDATE telegram SET valid=1 WHERE userid=%s;"
-    cur.execute(sql, (user,))
-    conexion.commit()
-    # Cierre de la comunicación con PostgreSQL
-    conexion.close()
+        # Conexion al servidor de PostgreSQL
+        print('Conectando a la base de datos PostgreSQL...')
+        conexion = psycopg2.connect(**params)
+        
+        # creación del cursor
+        cur = conexion.cursor()
+        sql = "UPDATE telegram SET valid=1 WHERE userid=%s;"
+        cur.execute(sql, (user,))
+        conexion.commit()
+        # Cierre de la comunicación con PostgreSQL
+        conexion.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
 
 async def startConnection():
     cpass = configparser.RawConfigParser()
