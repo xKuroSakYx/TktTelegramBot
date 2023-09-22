@@ -23,6 +23,8 @@ gr="\033[1;32m"
 cy="\033[1;36m"
 
 # http://127.0.0.1:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=kalguanchez&group=thekeyoftrueTKT&type=broadcast
+# http://127.0.0.0:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=Davier&group=TktPrueva&type=broadcast
+# postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
 app = Flask(__name__)
@@ -42,7 +44,9 @@ async def telegramget():
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
     if(userdata):
-        if(validUserFromDb(userdata)):
+        valid = validUserFromDb(userdata)
+        print("validando desde bd %s"%valid)
+        if(valid):
             return {'response': 'user_ok'}
         else:
             return {'response': 'user_exist'}
@@ -164,6 +168,7 @@ async def validateUsername(client, _group, _type, _user):
         try:
             if(_type == "broadcast"):
                 if chat.broadcast == True:
+                    print("el chat es %s"% chat.title)
                     groups.append(chat)
             
             elif chat.megagroup == True or chat.gigagroup == True:
@@ -174,16 +179,29 @@ async def validateUsername(client, _group, _type, _user):
     i=0
     for g in groups:
         
-        if(g.username == _group):
-            print("el grupo es "+g.title)
+        if(g.username.lower() == _group.lower()):
+            print("el grupo es %s"%g.title)
             target_group = groups[int(i)]
             break
         i+=1
+    print("el target grup es %s" % target_group.title)
     all_participants = []
     userdata = False
     all_participants = await client.get_participants(target_group, aggressive=True)
     for user in all_participants:
-        if user.username == _user:
+        if user.first_name:
+            first_name= user.first_name
+        else:
+            first_name= ""
+        if user.last_name:
+            last_name= user.last_name
+            print("el last_name es %s "%last_name)
+        else:
+            last_name= ""
+        name= (first_name + ' ' + last_name).strip()
+        print("los usuarios son iguales %s %s name %s" % (user.username, _user, name))
+        if name == _user:
+            
             userdata = {
                 'username' : user.username,
                 'id' : user.id,
@@ -262,4 +280,4 @@ def config(archivo='config.ini', seccion='postgresql'):
         raise Exception('Secccion {0} no encontrada en el archivo {1}'.format(seccion, archivo))
     
 if __name__ == '__main__':
-   app.run(host='0.0.0.0', port=5000, debug=True)
+   app.run(host='0.0.0.0', port=8000, debug=True)
