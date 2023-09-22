@@ -134,11 +134,14 @@ def updatebd():
         cur = conexion.cursor()
         sql = "UPDATE telegram SET valid=1 WHERE userid=%s;"
         cur.execute(sql, (user,))
+        print("actualizando la base de datos")
         conexion.commit()
         # Cierre de la comunicación con PostgreSQL
         conexion.close()
+        return {'response: user_updated_ok'}
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        return {'response': 'user_updated_error', 'data': error}
     finally:
         if conexion is not None:
             conexion.close()
