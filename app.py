@@ -105,8 +105,10 @@ def cleandb():
         conexion.commit()
         print("se elimino la tabla correctamente")
         conexion.close()
+        return {'response': 'clean_bd_ok'}
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        return {'response': 'clean_bd_ok', 'data': error}
     finally:
         if conexion is not None:
             conexion.close()
@@ -146,7 +148,7 @@ def updatebd():
         # Cierre de la comunicación con PostgreSQL
         conexion.close()
         print("se cerro la conexion con la base de datos")
-        return {'response: user_updated_ok'}
+        return {'response': 'user_updated_ok'}
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
