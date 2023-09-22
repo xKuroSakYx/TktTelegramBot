@@ -145,7 +145,9 @@ def updatebd():
             print("revisando la lista de los usuarios: %s valid: %s"%(userid, valid))
         # Cierre de la comunicación con PostgreSQL
         conexion.close()
+        print("se cerro la conexion con la base de datos")
         return {'response: user_updated_ok'}
+
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
         return {'response': 'user_updated_error', 'data': error}
