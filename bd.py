@@ -41,6 +41,7 @@ def validUserFromDb(data):
 
     # Recorremos los resultados y los mostramos
     for userid in cur.fetchall() :
+        print("obteniendo datos de bd %s" % userid)
         if(userid == data['id']):
             print("el usuario ya existe en la bd")
             return False
