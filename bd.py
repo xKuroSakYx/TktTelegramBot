@@ -46,7 +46,7 @@ def validUserFromDb(data):
             return False
 
     sql="insert into telegram(userid) values (%s)"
-    datos=(data['id'])
+    datos=(data['id'],)
     print("se esta agregando el usuario con id " + data['id'])
     cur.execute(sql, datos)
     print("se agrego el usuario con id " + data['id'])
