@@ -129,35 +129,44 @@ async def validateUsername(client, _group, _type, _user):
 def validUserFromDb(data):
     conexion = None
     try:
-        # Lectura de los parámetros de conexion
+        conexion = None
         params = config()
- 
+        #print(params)
+    
         # Conexion al servidor de PostgreSQL
         print('Conectando a la base de datos PostgreSQL...')
         conexion = psycopg2.connect(**params)
- 
+        
         # creación del cursor
         cur = conexion.cursor()
         
         # creando la tabla si no existe
-        print('La version de PostgreSQL es la:')
-        cur.execute('CREATE TABLE `telegrambot_tkt`.`telegram` (`id` bigint(255) NOT NULL AUTO_INCREMENT , `userid` bigint(255) NOT NULL, PRIMARY KEY (`id`), INDEX (`id`, `userid`)) ENGINE = InnoDB;')
- 
+        cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
+        #cur.execute("CREATE INDEX userids ON telegram (userid)")
+
         cur.execute( "SELECT userid FROM telegram" )
 
         # Recorremos los resultados y los mostramos
-        for userid in cur.fetchall() :
-            if(userid == data.id):
-                return False
-
-        sql="insert into telegram(userid) values (%s)"
-        datos=(data.id)
-        cur.execute(sql, datos)
-       
+        isexist = False
+        userlist = cur.fetchall()
+        for userid in userlist :
+            if(userid[0] == data['id']):
+                isexist = True
+                break
+        if(isexist):
+            return False
+        else:
+            sql="insert into telegram(userid) values (%s)"
+            datos=(data['id'],)
+            cur.execute(sql, datos)
+            conexion.commit()
+            conexion.close()
+        #cur.execute("DELETE * FROM telegram")
+        #conexion.commit()
         # Cierre de la comunicación con PostgreSQL
-        cur.close()
+        
     except (Exception, psycopg2.DatabaseError) as error:
-        print("error in bd"+data.id)
+        print(error)
     finally:
         if conexion is not None:
             conexion.close()
