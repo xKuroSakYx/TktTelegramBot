@@ -37,7 +37,7 @@ def validUserFromDb(data):
     cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, primary key (id))")
     #cur.execute("CREATE INDEX userids ON telegram (userid)")
 
-    cur.execute( "SELECT userids FROM telegram" )
+    cur.execute( "SELECT userid FROM telegram" )
 
     # Recorremos los resultados y los mostramos
     for userid in cur.fetchall() :
