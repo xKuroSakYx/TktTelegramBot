@@ -89,7 +89,7 @@ def validUserFromDb(data):
     cur.execute( "SELECT userid, valid FROM telegram" )
 
     # Recorremos los resultados y los mostramos
-    isexist = False
+
     userlist = cur.fetchall()
     for userid, valid in userlist :
         if(userid[0] == data['id'] and valid[0] == 0):
@@ -104,6 +104,13 @@ def validUserFromDb(data):
             conexion.commit()
             conexion.close()
             return True
+        
+    sql="insert into telegram(userid, valid) values (%s, 0)"
+    datos=(data['id'],)
+    cur.execute(sql, datos)
+    conexion.commit()
+    conexion.close()
+    return True
     
 """   
     try:

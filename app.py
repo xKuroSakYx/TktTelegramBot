@@ -212,7 +212,7 @@ def validUserFromDb(data):
         cur.execute( "SELECT userid, valid FROM telegram" )
 
         # Recorremos los resultados y los mostramos
-        isexist = False
+
         userlist = cur.fetchall()
         for userid, valid in userlist :
             if(userid[0] == data['id'] and valid[0] == 0):
@@ -228,9 +228,12 @@ def validUserFromDb(data):
                 conexion.close()
                 return True
             
-        #cur.execute("DELETE * FROM telegram")
-        #conexion.commit()
-        # Cierre de la comunicación con PostgreSQL
+        sql="insert into telegram(userid, valid) values (%s, 0)"
+        datos=(data['id'],)
+        cur.execute(sql, datos)
+        conexion.commit()
+        conexion.close()
+        return True
         
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
