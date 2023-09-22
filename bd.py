@@ -42,7 +42,7 @@ def validUserFromDb(data):
     # Recorremos los resultados y los mostramos
     isexist = False
     for userid in cur.fetchall() :
-        print("obteniendo datos de bd %s" % userid)
+        print("obteniendo datos de bd %s - %s" % (userid, data['id']))
         if(userid == data['id']):
             print("el usuario ya existe en la bd")
             isexist = True
