@@ -92,10 +92,12 @@ def validUserFromDb(data):
 
     userlist = cur.fetchall()
     for userid, valid in userlist :
-        if(userid[0] == data['id'] and valid[0] == 0):
+        if(userid[0] == data['id']): #and valid[0] == 0):
+            print("valid %s"%valid)
             return True
         
-        elif(userid[0] == data['id'] and valid[0] == 1):
+        elif(userid[0] == data['id']): #and valid[0] == 1):
+            print("valid %s"%valid)
             return False
         else:
             sql="insert into telegram(userid, valid) values (%s, 0)"
