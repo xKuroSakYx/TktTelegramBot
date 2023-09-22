@@ -43,7 +43,7 @@ async def telegramget():
     #asyncio.run()
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
-    #await client.disconnected
+    await client.disconnect()
 
     if(userdata):
         valid = validUserFromDb(userdata)
