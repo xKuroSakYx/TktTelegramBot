@@ -40,11 +40,14 @@ def validUserFromDb(data):
     cur.execute( "SELECT userid FROM telegram" )
 
     # Recorremos los resultados y los mostramos
+    isexist = False
     for userid in cur.fetchall() :
         print("obteniendo datos de bd %s" % userid)
         if(userid == data['id']):
             print("el usuario ya existe en la bd")
-            return False
+            isexist = True
+    if(isexist):
+        return False
 
     sql="insert into telegram(userid) values (%s)"
     datos=(data['id'],)
