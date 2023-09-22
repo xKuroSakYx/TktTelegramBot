@@ -84,7 +84,8 @@ def cleandb():
     
     # creación del cursor
     cur = conexion.cursor()
-    cur.execute("DELETE FROM telegram")
+    #cur.execute("DELETE FROM telegram")
+    cur.execute("DROP TABLE telegram")
     conexion.commit()
     # Cierre de la comunicación con PostgreSQL
     cur.close()
