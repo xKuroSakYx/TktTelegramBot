@@ -64,7 +64,8 @@ async def telegram():
     token = data["token"]
     group = data["group"]
     type = data["type"]
-
+    print(token+" "+user+" "+group+" "+type)
+    
     if(_TOKEN_ != token):
         return "invalid Token"
     
@@ -75,8 +76,10 @@ async def telegram():
     await client.disconnected
 
     if(userdata):
-        if(validUserFromDb(userdata)):
-            return {'response': 'user_ok'}
+        valid = validUserFromDb(userdata)
+        print("validando desde bd %s"%valid)
+        if(valid):
+            return {'response': 'user_ok', 'data': userdata}
         else:
             return {'response': 'user_exist'}
     else:
