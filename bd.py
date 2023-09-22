@@ -45,7 +45,7 @@ def validUserFromDb(data):
     print("userlist %s" % userlist)
     for userid in userlist :
         print("obteniendo datos de bd %s - %s" % (userid, data['id']))
-        if(userid == data['id']):
+        if(int(userid) == int(data['id'])):
             print("el usuario ya existe en la bd")
             isexist = True
     if(isexist):
