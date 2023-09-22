@@ -34,9 +34,10 @@ def validUserFromDb(data):
     
     # creando la tabla si no existe
     print('La version de PostgreSQL es la:')
-    cur.execute('CREATE TABLE IF NOT EXISTS telegram (id bigint NOT NULL AUTO_INCREMENT , userid bigint NOT NULL, PRIMARY KEY (id), INDEX (id, userid)) ENGINE = InnoDB;')
+    cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial bigint not null, userid bigint not null, primary key (id), INDEX (id, userid))")
+    cur.execute("CREATE INDEX userids ON telegram (userid)")
 
-    cur.execute( "SELECT userid FROM telegram" )
+    cur.execute( "SELECT userids FROM telegram" )
 
     # Recorremos los resultados y los mostramos
     for userid in cur.fetchall() :
