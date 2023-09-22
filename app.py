@@ -157,6 +157,40 @@ def updatebd():
             conexion.close()
             print('Conexión finalizada.')
 
+@app.route('/getusers', methods=["GET"])
+def getusers():
+    token = request.args.get('token')
+    user = request.args.get('user')
+    if(_TOKEN_ != token):
+        return "invalid Token"
+    if(user == None or user == ""):
+        return "invalid User"
+    
+    try:
+        conexion = None
+        params = config()
+        print('Conectando a la base de datos PostgreSQL...')
+        conexion = psycopg2.connect(**params)
+        
+        cur = conexion.cursor()
+        cur.execute( "SELECT userid, valid FROM telegram" )
+        ListUser = []
+        userlist = cur.fetchall()
+        for userid, valid in userlist :
+            ListUser.append([userid, valid])
+            print("revisando la lista de los usuarios: %s valid: %s"%(userid, valid))
+        conexion.close()
+        print("se cerro la conexion con la base de datos")
+        return {'response': 'user_list_ok', 'data': ListUser}
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return {'response': 'user_updated_error', 'data': error}
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
+
 async def startConnection():
     cpass = configparser.RawConfigParser()
     cpass.read('config.data')
