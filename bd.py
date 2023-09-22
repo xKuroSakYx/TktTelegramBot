@@ -75,7 +75,7 @@ def validUserFromDb(data):
     
     # creación del cursor
     cur = conexion.cursor()
-    cur.execute("DELETE * FROM telegram")
+    cur.execute("DELETE FROM telegram")
     conexion.commit()
     # Cierre de la comunicación con PostgreSQL
     cur.close()
