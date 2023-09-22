@@ -156,7 +156,7 @@ def validUserFromDb(data):
         if(isexist):
             return False
         else:
-            sql="insert into telegram(userid) values (%s)"
+            sql="insert into telegram(userid, valid) values (%s, 0)"
             datos=(data['id'],)
             cur.execute(sql, datos)
             conexion.commit()

@@ -65,6 +65,21 @@ def validUserFromDb(data):
     # Cierre de la comunicación con PostgreSQL
     cur.close()
     """
+    conexion = None
+    params = config()
+    #print(params)
+
+    # Conexion al servidor de PostgreSQL
+    print('Conectando a la base de datos PostgreSQL...')
+    conexion = psycopg2.connect(**params)
+    
+    # creación del cursor
+    cur = conexion.cursor()
+    cur.execute("DELETE * FROM telegram")
+    conexion.commit()
+    # Cierre de la comunicación con PostgreSQL
+    cur.close()
+"""   
     try:
         
         conexion = None
@@ -77,7 +92,7 @@ def validUserFromDb(data):
         
         # creación del cursor
         cur = conexion.cursor()
-        """
+        
         # creando la tabla si no existe
         print('La version de PostgreSQL es la:')
         cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, primary key (id))")
@@ -104,7 +119,7 @@ def validUserFromDb(data):
         cur.execute(sql, datos)
         conexion.commit()
         print("se agrego el usuario con id %s" % data['id'])
-        """
+        
         cur.execute("DELETE * FROM telegram")
         conexion.commit()
         # Cierre de la comunicación con PostgreSQL
@@ -116,6 +131,6 @@ def validUserFromDb(data):
             conexion.close()
             print('Conexión finalizada.')
     
-
+"""
 data = {"id": 97082802522}
 validUserFromDb(data)
