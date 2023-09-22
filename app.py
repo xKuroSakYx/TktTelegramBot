@@ -84,8 +84,7 @@ async def telegram():
 
 @app.route('/cleandb', methods=["GET"])
 def cleandb():
-    data = request.get_json()
-    token = data["token"]
+    token = request.args.get('token')
 
     if(_TOKEN_ != token):
         return "invalid Token"
