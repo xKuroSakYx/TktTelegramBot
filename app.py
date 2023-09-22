@@ -261,22 +261,24 @@ def validUserFromDb(data):
         for userid, valid in userlist :
             #print("el user id %s el valid %s"%(userid, valid))
             if(userid == data['id'] and valid == 0):
-                #print("valid %s"%valid)
+                print("el usuario %s esta regisrado en el canal pero no ha recibido los token"% data['name'])
                 conexion.close()
                 return True
             
             elif(userid == data['id'] and valid == 1):
-                #print("valid %s"%valid)
+                print("el usuario %s ya recibio los token"% data['name'])
                 conexion.close()
                 return False
             else:
+                print("ingresando un nuevo usuario %s"% data['name'])
                 sql="insert into telegram(userid, valid) values (%s, 0)"
                 datos=(data['id'],)
                 cur.execute(sql, datos)
                 conexion.commit()
                 conexion.close()
                 return True
-            
+        
+        print("ingresando un nuevo usuario final %s"% data['name'])
         sql="insert into telegram(userid, valid) values (%s, 0)"
         datos=(data['id'],)
         cur.execute(sql, datos)
