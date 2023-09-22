@@ -77,6 +77,7 @@ def validUserFromDb(data):
     cur = conexion.cursor()
     cur.execute("DROP TABLE IF EXISTS telegram")
     conexion.commit()
+    print("se elimino la tabla correctamente")
     conexion.close()
     """
     # creando la tabla si no existe
