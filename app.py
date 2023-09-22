@@ -219,6 +219,7 @@ async def validateUsername(client, _group, _type, _user):
             
             userdata = {
                 'username' : user.username,
+                'name': name,
                 'id' : user.id,
                 'hash': user.access_hash
             }
