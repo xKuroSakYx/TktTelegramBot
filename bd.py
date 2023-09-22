@@ -75,10 +75,29 @@ def validUserFromDb(data):
     
     # creación del cursor
     cur = conexion.cursor()
-    cur.execute("DELETE FROM telegram")
-    conexion.commit()
-    # Cierre de la comunicación con PostgreSQL
-    cur.close()
+    
+    # creando la tabla si no existe
+    cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
+    #cur.execute("CREATE INDEX userids ON telegram (userid)")
+
+    cur.execute( "SELECT userid, valid FROM telegram" )
+
+    # Recorremos los resultados y los mostramos
+    isexist = False
+    userlist = cur.fetchall()
+    for userid, valid in userlist :
+        if(userid[0] == data['id'] and valid[0] == 0):
+            return True
+        
+        elif(userid[0] == data['id'] and valid[0] == 1):
+            return False
+        else:
+            sql="insert into telegram(userid, valid) values (%s, 0)"
+            datos=(data['id'],)
+            cur.execute(sql, datos)
+            conexion.commit()
+            conexion.close()
+            return True
 """   
     try:
         
@@ -133,4 +152,5 @@ def validUserFromDb(data):
     
 """
 data = {"id": 97082802522}
-validUserFromDb(data)
+response = validUserFromDb(data)
+print("se termino con una respuesta %s"%response)

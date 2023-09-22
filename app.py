@@ -4,9 +4,10 @@ from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
 import os, sys
 import configparser
+from configparser import ConfigParser
 import csv
 import time
-from config import config
+
 import psycopg2
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -60,7 +61,33 @@ async def telegram():
         return "invalid Token"
     
     #client = await startConnection()
-    validateUsername(group, type, user)
+    #asyncio.run()
+    client = await startConnection()
+    userdata = await validateUsername(client, group, type, user)
+    if(userdata):
+        if(validUserFromDb(userdata)):
+            return {'response': 'user_ok'}
+        else:
+            return {'response': 'user_exist'}
+    else:
+        return {'response': "user_not_registry"}
+
+@app.route('/cleandb', methods=["GET"])
+def cleandb():
+    conexion = None
+    params = config()
+    #print(params)
+
+    # Conexion al servidor de PostgreSQL
+    print('Conectando a la base de datos PostgreSQL...')
+    conexion = psycopg2.connect(**params)
+    
+    # creación del cursor
+    cur = conexion.cursor()
+    cur.execute("DELETE FROM telegram")
+    conexion.commit()
+    # Cierre de la comunicación con PostgreSQL
+    cur.close()
 
 async def startConnection():
     cpass = configparser.RawConfigParser()
@@ -127,7 +154,6 @@ async def validateUsername(client, _group, _type, _user):
     return userdata
 
 def validUserFromDb(data):
-    conexion = None
     try:
         conexion = None
         params = config()
@@ -144,23 +170,25 @@ def validUserFromDb(data):
         cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
         #cur.execute("CREATE INDEX userids ON telegram (userid)")
 
-        cur.execute( "SELECT userid FROM telegram" )
+        cur.execute( "SELECT userid, valid FROM telegram" )
 
         # Recorremos los resultados y los mostramos
         isexist = False
         userlist = cur.fetchall()
-        for userid in userlist :
-            if(userid[0] == data['id']):
-                isexist = True
-                break
-        if(isexist):
-            return False
-        else:
-            sql="insert into telegram(userid, valid) values (%s, 0)"
-            datos=(data['id'],)
-            cur.execute(sql, datos)
-            conexion.commit()
-            conexion.close()
+        for userid, valid in userlist :
+            if(userid[0] == data['id'] and valid[0] == 0):
+                return True
+            
+            elif(userid[0] == data['id'] and valid[0] == 1):
+                return False
+            else:
+                sql="insert into telegram(userid, valid) values (%s, 0)"
+                datos=(data['id'],)
+                cur.execute(sql, datos)
+                conexion.commit()
+                conexion.close()
+                return True
+            
         #cur.execute("DELETE * FROM telegram")
         #conexion.commit()
         # Cierre de la comunicación con PostgreSQL
@@ -172,5 +200,21 @@ def validUserFromDb(data):
             conexion.close()
             print('Conexión finalizada.')
 
+def config(archivo='config.ini', seccion='postgresql'):
+    # Crear el parser y leer el archivo
+    parser = ConfigParser()
+    parser.read(archivo)
+    print('se ejecuto config')
+ 
+    # Obtener la sección de conexión a la base de datos
+    db = {}
+    if parser.has_section(seccion):
+        params = parser.items(seccion)
+        for param in params:
+            db[param[0]] = param[1]
+        return db
+    else:
+        raise Exception('Secccion {0} no encontrada en el archivo {1}'.format(seccion, archivo))
+    
 if __name__ == '__main__':
    app.run(host='0.0.0.0', port=5000, debug=True)
