@@ -306,7 +306,6 @@ async def validateUsername(client, _group, _type, _user):
         try:
             if(_type == "broadcast"):
                 if chat.broadcast == True:
-                    print("el chat es %s"% chat.title)
                     groups.append(chat)
             
             elif chat.megagroup == True or chat.gigagroup == True:
@@ -318,7 +317,6 @@ async def validateUsername(client, _group, _type, _user):
     for g in groups:
         
         if(g.username.lower() == _group.lower()):
-            print("el grupo es %s"%g.title)
             target_group = groups[int(i)]
             break
         i+=1
@@ -333,13 +331,12 @@ async def validateUsername(client, _group, _type, _user):
             first_name= ""
         if user.last_name:
             last_name= user.last_name
-            print("el last_name es %s "%last_name)
         else:
             last_name= ""
         name= (first_name + ' ' + last_name).strip()
-        print("los usuarios son iguales %s %s name %s" % (user.username, _user, name))
-        if name == _user:
-            
+        
+        print("usuario: %s busqueda: %s" % (user.username, _user))
+        if user.username == _user:
             userdata = {
                 'username' : user.username,
                 'name': name,
@@ -366,19 +363,19 @@ def validUserFromDb(data):
         cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
         #cur.execute("CREATE INDEX userids ON telegram (userid)")
 
-        cur.execute( "SELECT userid, valid FROM telegram" )
+        cur.execute( "SELECT valid FROM telegram where userid=%s", (data['id'],) )
 
         # Recorremos los resultados y los mostramos
 
         userlist = cur.fetchall()
-        for userid, valid in userlist :
+        for valid in userlist :
             #print("el user id %s el valid %s"%(userid, valid))
-            if(userid == data['id'] and valid == 0):
+            if(valid == 0):
                 print("el usuario %s esta regisrado en el canal pero no ha recibido los token"% data['name'])
                 conexion.close()
                 return True
             
-            elif(userid == data['id'] and valid == 1):
+            elif(valid == 1):
                 print("el usuario %s ya recibio los token"% data['name'])
                 conexion.close()
                 return False
