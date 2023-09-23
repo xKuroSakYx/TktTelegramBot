@@ -1,4 +1,5 @@
 from flask import Flask, request, json
+from flask_cors import CORS
 from telethon.sync import TelegramClient
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
@@ -30,6 +31,7 @@ cy="\033[1;36m"
 # gunicorn --bind 0.0.0.0:8000 app:app
 
 app = Flask(__name__)
+CORS(app)
 @app.route('/telegram', methods=["GET"])
 async def telegramget():
     token = request.args.get('token')
@@ -111,7 +113,7 @@ def cleandb():
         return "invalid Token"
     
     returndata = ""
-    
+
     try:
         conexion = None
         params = config()
