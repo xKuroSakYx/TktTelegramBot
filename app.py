@@ -245,6 +245,14 @@ def getusers():
             conexion.close()
             print('Conexión finalizada.')
 
+@app.after_request
+def after_request(response):
+    response.headers["Access-Control-Allow-Origin"] = "*" # <- You can change "*" for a domain for example "http://localhost"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, PUT, DELETE"
+    response.headers["Access-Control-Allow-Headers"] = "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization"
+    return response
+
 async def startConnection():
     cpass = configparser.RawConfigParser()
     cpass.read('config.data')
@@ -396,6 +404,6 @@ def config(archivo='config.ini', seccion='postgresql'):
         return db
     else:
         raise Exception('Secccion {0} no encontrada en el archivo {1}'.format(seccion, archivo))
- 
+
 if __name__ == '__main__':
    app.run(host='0.0.0.0', port=5000, debug=True)
