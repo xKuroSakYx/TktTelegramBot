@@ -190,7 +190,7 @@ def updatebd():
         # creación del cursor
         cur = conexion.cursor()
         sql = "UPDATE telegram SET valid=%s WHERE userid=%s;"
-        cur.execute(sql, (valid, user))
+        cur.execute(sql, (value, user))
         print("actualizando la base de datos")
         conexion.commit()
         cur.execute( "SELECT userid, valid FROM telegram" )
