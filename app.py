@@ -43,10 +43,12 @@ async def telegramget():
     print(token+" "+user+" "+group+" "+type)
 
     if(_TOKEN_ != token):
-        return "invalid Token"
-    
-    #client = await startConnection()
-    #asyncio.run()
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
     await client.disconnect()
@@ -80,20 +82,15 @@ async def telegram():
     print(token+" "+user+" "+group+" "+type)
 
     if(_TOKEN_ != token):
-        return "invalid Token"
-    
-    returndata = {'response': 'user_exist', 'data': token+" "+user+" "+group+" "+type}
-    response = app.response_class(
-        response=json.dumps(returndata),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
-    #client = await startConnection()
-    #asyncio.run()
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
-    await client.disconnected
+    await client.disconnect()
 
     returndata = ""
 
@@ -119,7 +116,11 @@ def cleandb():
     token = request.args.get('token')
 
     if(_TOKEN_ != token):
-        return "invalid Token"
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
     
     returndata = ""
 
@@ -160,9 +161,17 @@ def updatebd():
     user = request.args.get('user')
     value = request.args.get('value')
     if(_TOKEN_ != token):
-        return "invalid Token"
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
     if(user == None or user == ""):
-        return "invalid User"
+        return app.response_class(
+            response=json.dumps({'response': 'invalid User'}),
+            status=200,
+            mimetype='application/json'
+        )
     
     if(value == None):
         value = 0
@@ -216,9 +225,17 @@ def getusers():
     token = request.args.get('token')
     user = request.args.get('user')
     if(_TOKEN_ != token):
-        return "invalid Token"
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
     if(user == None or user == ""):
-        return "invalid User"
+        return app.response_class(
+            response=json.dumps({'response': 'invalid User'}),
+            status=200,
+            mimetype='application/json'
+        )
     
     try:
         conexion = None
