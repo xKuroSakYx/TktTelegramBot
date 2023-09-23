@@ -30,8 +30,6 @@ cy="\033[1;36m"
 # postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
-logging.getLogger('flask_cors').level = logging.DEBUG
-
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 @app.route('/telegram', methods=["GET"])
