@@ -32,9 +32,9 @@ cy="\033[1;36m"
 
 app = Flask(__name__, instance_relative_config=True)
 #CORS(app, supports_credentials=True)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-@app.route('/telegram', methods=["GET"])
+@app.route('/api/telegram', methods=["GET"])
 async def telegramget():
     token = request.args.get('token')
     user = request.args.get('user')
@@ -70,7 +70,7 @@ async def telegramget():
     )
     return response
 
-@app.route('/telegram', methods=["POST"])
+@app.route('/api/telegram', methods=["POST"])
 async def telegram():
     data = request.get_json()
     user = data["username"]
@@ -108,7 +108,7 @@ async def telegram():
     )
     return response
 
-@app.route('/cleandb', methods=["GET"])
+@app.route('/api/cleandb', methods=["GET"])
 def cleandb():
     token = request.args.get('token')
 
@@ -148,7 +148,7 @@ def cleandb():
     )
     return response
 
-@app.route('/updatebd', methods=["GET"])
+@app.route('/api/updatebd', methods=["GET"])
 def updatebd():
     token = request.args.get('token')
     user = request.args.get('user')
@@ -205,7 +205,7 @@ def updatebd():
     )
     return response
 
-@app.route('/getusers', methods=["GET"])
+@app.route('/api/getusers', methods=["GET"])
 def getusers():
     token = request.args.get('token')
     user = request.args.get('user')
