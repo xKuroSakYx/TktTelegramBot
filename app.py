@@ -31,7 +31,9 @@ cy="\033[1;36m"
 # gunicorn --bind 0.0.0.0:8000 app:app
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+#CORS(app, supports_credentials=True)
+CORS(app)
+
 @app.route('/telegram', methods=["GET"])
 async def telegramget():
     token = request.args.get('token')
