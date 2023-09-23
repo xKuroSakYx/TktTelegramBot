@@ -1,4 +1,4 @@
-from flask import Flask, request, json
+from flask import Flask, request, json, jsonify
 from flask_cors import CORS
 from telethon.sync import TelegramClient
 from telethon.tl.functions.messages import GetDialogsRequest
@@ -82,7 +82,13 @@ async def telegram():
     if(_TOKEN_ != token):
         return "invalid Token"
     
-    return {'response': 'user_exist', 'data': token+" "+user+" "+group+" "+type}
+    returndata = {'response': 'user_exist', 'data': token+" "+user+" "+group+" "+type}
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
     #client = await startConnection()
     #asyncio.run()
     client = await startConnection()
