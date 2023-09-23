@@ -174,7 +174,7 @@ def updatebd():
         )
     
     if(value == None):
-        value = 0
+        value = 1
 
     returndata = ""
 
@@ -189,8 +189,8 @@ def updatebd():
         
         # creación del cursor
         cur = conexion.cursor()
-        sql = "UPDATE telegram SET valid=1 WHERE userid=%s;"
-        cur.execute(sql, (user,))
+        sql = "UPDATE telegram SET valid=%s WHERE userid=%s;"
+        cur.execute(sql, (valid, user))
         print("actualizando la base de datos")
         conexion.commit()
         cur.execute( "SELECT userid, valid FROM telegram" )
