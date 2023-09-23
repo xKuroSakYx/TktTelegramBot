@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, json
 from telethon.sync import TelegramClient
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
@@ -47,15 +47,24 @@ async def telegramget():
     userdata = await validateUsername(client, group, type, user)
     await client.disconnect()
 
+    returndata = ""
+
     if(userdata):
         valid = validUserFromDb(userdata)
         print("validando desde bd %s"%valid)
         if(valid):
-            return {'response': 'user_ok', 'data': userdata}
+            returndata = {'response': 'user_ok', 'data': userdata}
         else:
-            return {'response': 'user_exist'}
+            returndata = {'response': 'user_exist'}
     else:
-        return {'response': "user_not_registry"}
+        returndata = {'response': "user_not_registry"}
+    
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route('/telegram', methods=["POST"])
 async def telegram():
@@ -65,7 +74,7 @@ async def telegram():
     group = data["group"]
     type = data["type"]
     print(token+" "+user+" "+group+" "+type)
-    
+
     if(_TOKEN_ != token):
         return "invalid Token"
     
@@ -75,15 +84,24 @@ async def telegram():
     userdata = await validateUsername(client, group, type, user)
     await client.disconnected
 
+    returndata = ""
+
     if(userdata):
         valid = validUserFromDb(userdata)
         print("validando desde bd %s"%valid)
         if(valid):
-            return {'response': 'user_ok', 'data': userdata}
+            returndata = {'response': 'user_ok', 'data': userdata}
         else:
-            return {'response': 'user_exist'}
+            returndata = {'response': 'user_exist'}
     else:
-        return {'response': "user_not_registry"}
+        returndata = {'response': "user_not_registry"}
+    
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route('/cleandb', methods=["GET"])
 def cleandb():
@@ -91,6 +109,8 @@ def cleandb():
 
     if(_TOKEN_ != token):
         return "invalid Token"
+    
+    returndata = ""
     
     try:
         conexion = None
@@ -107,24 +127,37 @@ def cleandb():
         conexion.commit()
         print("se elimino la tabla correctamente")
         conexion.close()
-        return {'response': 'clean_bd_ok'}
+        returndata = {'response': 'clean_bd_ok'}
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return {'response': 'clean_bd_ok', 'data': error}
+        returndata = {'response': 'clean_bd_ok', 'data': error}
     finally:
         if conexion is not None:
             conexion.close()
             print('Conexión finalizada.')
 
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
 @app.route('/updatebd', methods=["GET"])
 def updatebd():
     token = request.args.get('token')
     user = request.args.get('user')
+    value = request.args.get('value')
     if(_TOKEN_ != token):
         return "invalid Token"
     if(user == None or user == ""):
         return "invalid User"
     
+    if(value == None):
+        value = 0
+
+    returndata = ""
+
     try:
         conexion = None
         params = config()
@@ -150,15 +183,22 @@ def updatebd():
         # Cierre de la comunicación con PostgreSQL
         conexion.close()
         print("se cerro la conexion con la base de datos")
-        return {'response': 'user_updated_ok'}
+        returndata = {'response': 'user_updated_ok'}
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return {'response': 'user_updated_error', 'data': error}
+        returndata = {'response': 'user_updated_error', 'data': error}
     finally:
         if conexion is not None:
             conexion.close()
             print('Conexión finalizada.')
+
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route('/getusers', methods=["GET"])
 def getusers():
@@ -345,6 +385,6 @@ def config(archivo='config.ini', seccion='postgresql'):
         return db
     else:
         raise Exception('Secccion {0} no encontrada en el archivo {1}'.format(seccion, archivo))
-    
+ 
 if __name__ == '__main__':
-   app.run(host='0.0.0.0', port=8000, debug=True)
+   app.run(host='0.0.0.0', port=5000, debug=True)
