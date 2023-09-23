@@ -30,7 +30,7 @@ cy="\033[1;36m"
 # postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
 #CORS(app, supports_credentials=True)
 CORS(app)
 
