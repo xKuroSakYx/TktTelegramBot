@@ -32,7 +32,7 @@ cy="\033[1;36m"
 
 app = Flask(__name__, instance_relative_config=True)
 #CORS(app, supports_credentials=True)
-CORS(app)
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/telegram', methods=["GET"])
 async def telegramget():
