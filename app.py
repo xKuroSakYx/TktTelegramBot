@@ -1,38 +1,160 @@
-from flask import Flask, request, json, jsonify
+from flask import Flask, request, redirect, session, url_for, render_template
 from flask_cors import CORS
-from telethon.sync import TelegramClient
-from telethon.tl.functions.messages import GetDialogsRequest
-from telethon.tl.types import InputPeerEmpty
-import os, sys
-import configparser
-from configparser import ConfigParser
-import csv
+from telethon.errors.rpcerrorlist import PeerFloodError
+import os
+import asyncio
+import psycopg2
 import time
 
-import psycopg2
-import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from config.config import startConnection, validateUsername, validUserFromDb, config, calculate_sha256, storeTwitter, validateTwitterTelegram, validateWallet, authCode, timestamp, storeCode
+
+######################## TWITTER OAUTH ######################
+from requests_oauthlib import OAuth1Session
+import json
+import requests
+#############################################################
 
 _TOKEN_ = 'tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s'
-chats = []
-last_date = None
-chunk_size = 200
-groups=[]
+_TIMEMAX_ = 600
+######################## TWITTER OAUTH ######################
+consumer_key='Gi22eaK49RxNH9uYhJquV0v4u'
+consumer_secret= 'rQJKpa4p8j8Pc1Ju9llERSDyCcj6NuKwyXrGJy4wHFYcDIU923'
 
-re="\033[1;31m"
-gr="\033[1;32m"
-cy="\033[1;36m"
+web_url = "http://localhost:8080"
+request_token_url = "https://api.twitter.com/oauth/request_token"
+access_token_url = "https://api.twitter.com/oauth/access_token"
 
-# http://127.0.0.1:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=kalguanchez&group=thekeyoftrueTKT&type=broadcast
-# http://127.0.0.0:8000/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=Davier&group=TktPrueva&type=broadcast
-# http://127.0.0.0:8000/cleandb?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s
-# http://127.0.0.0:8000/updatebd?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=5900098531
+fields = "created_at,description"
+params = {"user.fields": fields}
+
+#############################################################
+
+# http://127.0.0.1:5000/api/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=kalguanchez&group=thekeyoftrueTKT&type=broadcast
+# http://127.0.0.1:5000/api/telegram?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=Davier&group=thekeyoftrueTKT&type=broadcast
+# http://127.0.0.1:5000/api/cleandb?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s
+# http://127.0.0.1:5000/api/updatebd?token=tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s&user=5900098531
 # postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
-app = Flask(__name__, instance_relative_config=True)
+
+"""
+task = asyncio.create_task(startConnection())
+res = await asyncio.shield(task)
+while True:
+   
+    if task.done():
+        client = task.result()
+        break
+"""
+
+app = Flask(__name__, instance_relative_config=False)
+app.secret_key = os.urandom(50)
 #CORS(app, supports_credentials=True)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+######################## TWITTER OAUTH ######################
+@app.route("/", methods=["GET"])
+def index():
+    
+    ip = '%s' % request.remote_addr
+    ip = ip.replace('.', '')
+    
+    oauth = OAuth1Session(consumer_key, client_secret=consumer_secret)
+
+    try:
+        fetch_response = oauth.fetch_request_token(request_token_url)
+    except ValueError:
+        print(
+            "There may have been an issue with the consumer_key or consumer_secret you entered."
+        )
+
+    resource_owner_key = fetch_response.get("oauth_token")
+    resource_owner_secret = fetch_response.get("oauth_token_secret")
+    
+    #session['ip'] = {'resource_owner_key': resource_owner_key, "resource_owner_secret": resource_owner_secret}
+    session["%s1"%ip] = resource_owner_key
+    session["%s2"%ip]  = resource_owner_secret
+
+    # # Get authorization
+    base_authorization_url = "https://api.twitter.com/oauth/authorize"
+    authorization_url = oauth.authorization_url(base_authorization_url)
+    
+    return redirect(authorization_url)
+
+@app.route("/oauth/callback", methods=["GET"])
+def callback():
+    ip = '%s' % request.remote_addr
+    ip = ip.replace('.', '')
+    
+    resource_owner_key = session["%s1"%ip]
+    resource_owner_secret = session["%s2"%ip]
+
+    print("Got OAuth token: %s" % resource_owner_key)
+
+    verifier = request.args.get("oauth_verifier")
+    print("el toen de verificacion %s"%verifier)
+    oauth = OAuth1Session(
+        consumer_key,
+        client_secret=consumer_secret,
+        resource_owner_key=resource_owner_key,
+        resource_owner_secret=resource_owner_secret,
+        verifier=verifier,
+    )
+    oauth_tokens = oauth.fetch_access_token(access_token_url)
+
+    access_token = oauth_tokens["oauth_token"]
+    access_token_secret = oauth_tokens["oauth_token_secret"]
+
+    # Make the request
+    oauth = OAuth1Session(
+        consumer_key,
+        client_secret=consumer_secret,
+        resource_owner_key=access_token,
+        resource_owner_secret=access_token_secret,
+    )
+
+    response = oauth.get("https://api.twitter.com/2/users/me", params=params)
+
+    if response.status_code != 200:
+        raise Exception(
+            "Request returned an error: {} {}".format(response.status_code, response.text)
+        )
+
+    print("Response code: {}".format(response.status_code))
+
+    json_response = response.json()
+    print(json_response)
+
+    #http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username=lii_mmminseon5
+    resp = requests.get('http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+    if resp.status_code != 200:
+        raise Exception(
+            "Request returned an error: {} {}".format(
+                resp.status_code, resp.text
+            )
+        )
+    jresponse = resp.json()
+    isfollow = jresponse['response']
+    print(jresponse)
+
+    mId = json_response['data']['id']
+    mUsername = json_response['data']['id']
+
+    if(isfollow == 'username_follows'):
+        mFollow = 'valid'
+    elif(isfollow == 'username_not_follow'):
+        mFollow = 'invalid'
+    elif(isfollow == 'username_not_exist'):
+        mFollow = 'notexist'
+
+    hash_value = calculate_sha256('%s %s %s'%(mId, mUsername, mFollow))
+
+    storeTwitter(mId, mUsername, mFollow, hash_value)
+
+    #print(json.dumps(json_response, indent=4, sort_keys=True))
+    return redirect('%s/api/twitter?token=%s&username=%s&twitter=%s&hash=%s'%(web_url, _TOKEN_, mUsername, mFollow, hash_value))
+
+#############################################################
 
 @app.route('/api/telegram', methods=["GET"])
 async def telegramget():
@@ -48,7 +170,7 @@ async def telegramget():
             status=200,
             mimetype='application/json'
         )
-
+    
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
     await client.disconnect()
@@ -57,9 +179,10 @@ async def telegramget():
 
     if(userdata):
         valid = validUserFromDb(userdata)
+        hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
         print("validando desde bd %s"%valid)
         if(valid):
-            returndata = {'response': 'user_ok', 'data': userdata}
+            returndata = {'response': 'user_ok', 'hash': hash_value}
         else:
             returndata = {'response': 'user_exist'}
     else:
@@ -80,30 +203,106 @@ async def telegram():
     group = data["group"]
     type = data["type"]
     print(token+" "+user+" "+group+" "+type)
-
+    #time.sleep(4)
+    #return {'response': 'user_ok', 'data': "okok"}
     if(_TOKEN_ != token):
         return app.response_class(
             response=json.dumps({'response': 'invalid Token'}),
             status=200,
             mimetype='application/json'
         )
-
+    
     client = await startConnection()
     userdata = await validateUsername(client, group, type, user)
-    await client.disconnect()
-
+    
     returndata = ""
+    
 
     if(userdata):
-        valid = validUserFromDb(userdata)
+        hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
+        valid = validUserFromDb(userdata, hash_value)
+        
         print("validando desde bd %s"%valid)
         if(valid):
-            returndata = {'response': 'user_ok', 'data': userdata}
+            receiver = await client.get_input_entity(user)
+            storeCode()
+            message = authCode()
+            session["%s_message" % user] = message
+            session["%s_time" % user] = timestamp()
+            try:
+                await client.send_message(receiver, message.format(user))
+            except PeerFloodError:
+                print("[!] Getting Flood Error from telegram. \n[!] Script is stopping now. \n[!] Please try again after some time.")
+            except Exception as e:
+                print("[!] Error:", e)
+                print("[!] Trying to continue...")
+
+            returndata = {'response': 'user_ok', "hash": hash_value}
         else:
             returndata = {'response': 'user_exist'}
     else:
+        receiver = await client.get_input_entity(user)
+        message = authCode()
+        session['message'] = message
+        session["message_%s" % user] = "%s" % message
+        session["time_%s" % user] = "%s" % timestamp()
+        try:
+            await client.send_message(receiver, message.format(user))
+            print("se envio el message codde sin registrarse %s" % message)
+        except PeerFloodError:
+            print("[!] Getting Flood Error from telegram. \n[!] Script is stopping now. \n[!] Please try again after some time.")
+        except Exception as e:
+            print("[!] Error:", e)
+            print("[!] Trying to continue...")
         returndata = {'response': "user_not_registry"}
+
+    await client.disconnect()
+
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
+@app.route('/api/telegram/code', methods=["POST"])
+async def telegramCode():
+    data = request.get_json()
+    token = data["token"]
+    user = data["username"]
+    code = data["code"]
     
+    #time.sleep(4)
+    #return {'response': 'user_ok', 'data': "okok"}
+    if(_TOKEN_ != token):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+    print("el sms guardao es %s" % session['message'])
+    timeactual = timestamp()
+    msg = "message_%s" % user
+    tim = "time_%s" % user
+    message = session[msg]
+    timeant = session[tim]
+
+    session[msg] = ''
+    session[tim] = ''
+
+    returndata = ""
+
+    timedif = timeant - timeactual
+    print("print el timedef es %s el msg %s el tim %s " % (timedif, message, timeant))
+    if(timedif <= _TIMEMAX_):
+        if(code == message):
+            returndata = {'response': 'code_ok'}
+        else:
+            returndata = {'response': 'user_error'}
+    else:
+        returndata = {'response': 'user_error_time'}
+    
+
     response = app.response_class(
         response=json.dumps(returndata),
         status=200,
@@ -262,6 +461,59 @@ def getusers():
             conexion.close()
             print('Conexión finalizada.')
 
+####################AUTENTICATE WALLET##################
+@app.route('/api/wallet', methods=["POST"])
+async def wallet():
+    data = request.get_json()
+    token = data["token"]
+    wallet = data["wallet"]
+    twitter = data["twitter"]
+    telegram = data["telegram"]
+    referido = data["referido"]
+
+    #return {'response': 'user_ok', 'data': "okok"}
+    if(_TOKEN_ != token):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+    returndata = ""
+
+    val = validateTwitterTelegram(twitter, telegram)
+
+    isok =False
+    if(val['twitterexist'] and val['telegramexist']):
+        if(not val['twittervalid']):
+            returndata = {'response': 'user_twitter_exist'}
+        else:
+            if(not val['telegramvalid'] ):
+                returndata = {'response': 'user_telegram_exist'}
+            else:
+                isok = True
+        
+    elif(not val['twitterexist']):
+        returndata = {'response': 'user_twitter_notexist'}
+
+    elif(not val['telegramexist']):
+        returndata = {'response': 'user_telegram_notexist'}
+
+    if(isok):
+        vWallet = validateWallet(wallet, referido)
+        if(vWallet[0] == 'notpaid'):
+            returndata = {'response': 'user_wallet_notpaid', "data": vWallet[1]}
+        elif vWallet[0] == 'paid':
+            returndata = {'response': 'user_wallet_paid', "data": vWallet[1]}
+        elif vWallet[0] == 'ok':
+            returndata = {'response': 'user_wallet_ok', "data": vWallet[1], "reflink": vWallet[2]}
+
+    response = app.response_class(
+        response=json.dumps(returndata),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+########################################################
 @app.after_request
 def after_request(response):
     response.headers["Access-Control-Allow-Origin"] = "*" # <- You can change "*" for a domain for example "http://localhost"
@@ -270,154 +522,6 @@ def after_request(response):
     response.headers["Access-Control-Allow-Headers"] = "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization"
     return response
 
-async def startConnection():
-    cpass = configparser.RawConfigParser()
-    cpass.read('config.data')
-
-    try:
-        api_id = cpass['cred']['id']
-        api_hash = cpass['cred']['hash']
-        phone = cpass['cred']['phone']
-        client = TelegramClient(phone, api_id, api_hash)
-
-    except KeyError:
-        os.system('clear')
-        print(re+"[!] run python3 setup.py first !!\n")
-        sys.exit(1)
-
-    await client.connect()
-    if not await client.is_user_authorized():
-        await client.send_code_request(phone)
-        #os.system('clear')
-        await client.sign_in(phone, input(gr+'[+] Enter the code: '+re))
-    return client
-
-async def validateUsername(client, _group, _type, _user):
-    result = await client(GetDialogsRequest(
-             offset_date=last_date,
-             offset_id=0,
-             offset_peer=InputPeerEmpty(),
-             limit=chunk_size,
-             hash = 0
-         ))
-
-    chats.extend(result.chats)
-    for chat in chats:
-        try:
-            if(_type == "broadcast"):
-                if chat.broadcast == True:
-                    groups.append(chat)
-            
-            elif chat.megagroup == True or chat.gigagroup == True:
-                groups.append(chat)
-        except:
-            continue
-
-    i=0
-    for g in groups:
-        
-        if(g.username.lower() == _group.lower()):
-            target_group = groups[int(i)]
-            break
-        i+=1
-    print("el target grup es %s" % target_group.title)
-    all_participants = []
-    userdata = False
-    all_participants = await client.get_participants(target_group, aggressive=True)
-    for user in all_participants:
-        if user.first_name:
-            first_name= user.first_name
-        else:
-            first_name= ""
-        if user.last_name:
-            last_name= user.last_name
-        else:
-            last_name= ""
-        name= (first_name + ' ' + last_name).strip()
-        
-        print("usuario: %s busqueda: %s" % (user.username, _user))
-        if user.username == _user:
-            userdata = {
-                'username' : user.username,
-                'name': name,
-                'id' : user.id,
-                'hash': user.access_hash
-            }
-            break
-    return userdata
-
-def validUserFromDb(data):
-    try:
-        conexion = None
-        params = config()
-        #print(params)
-    
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
-        
-        # creación del cursor
-        cur = conexion.cursor()
-        
-        # creando la tabla si no existe
-        cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, primary key (id))")
-        #cur.execute("CREATE INDEX userids ON telegram (userid)")
-
-        cur.execute( "SELECT valid FROM telegram where userid=%s", (data['id'],) )
-
-        # Recorremos los resultados y los mostramos
-
-        userlist = cur.fetchall()
-        for valid in userlist :
-            #print("el user id %s el valid %s"%(userid, valid))
-            if(valid == 0):
-                print("el usuario %s esta regisrado en el canal pero no ha recibido los token"% data['name'])
-                conexion.close()
-                return True
-            
-            elif(valid == 1):
-                print("el usuario %s ya recibio los token"% data['name'])
-                conexion.close()
-                return False
-            else:
-                print("ingresando un nuevo usuario %s"% data['name'])
-                sql="insert into telegram(userid, valid) values (%s, 0)"
-                datos=(data['id'],)
-                cur.execute(sql, datos)
-                conexion.commit()
-                conexion.close()
-                return True
-        
-        print("ingresando un nuevo usuario final %s"% data['name'])
-        sql="insert into telegram(userid, valid) values (%s, 0)"
-        datos=(data['id'],)
-        cur.execute(sql, datos)
-        conexion.commit()
-        conexion.close()
-        return True
-        
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conexion is not None:
-            conexion.close()
-            print('Conexión finalizada.')
-
-def config(archivo='config.ini', seccion='postgresql'):
-    # Crear el parser y leer el archivo
-    parser = ConfigParser()
-    parser.read(archivo)
-    print('se ejecuto config')
- 
-    # Obtener la sección de conexión a la base de datos
-    db = {}
-    if parser.has_section(seccion):
-        params = parser.items(seccion)
-        for param in params:
-            db[param[0]] = param[1]
-        return db
-    else:
-        raise Exception('Secccion {0} no encontrada en el archivo {1}'.format(seccion, archivo))
 
 if __name__ == '__main__':
    app.run(host='0.0.0.0', port=5000, debug=True)
