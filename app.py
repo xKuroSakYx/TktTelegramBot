@@ -3,10 +3,11 @@ from flask_cors import CORS
 from telethon.errors.rpcerrorlist import PeerFloodError
 import os
 import asyncio
-import psycopg2
+#import psycopg2
+import mysql.connector
 import time
 
-from config.config import startConnection, validateUsername, validUserFromDb, config, calculate_sha256, storeTwitter, validateTwitterTelegram, validateWallet, authCode, timestamp, storeCode
+from config.config import startConnection, validateUsername, validUserFromDb, config, calculate_sha256, storeTwitter, validateTwitterTelegram, validateWallet, authCode, timestamp, storeCode, getStoreCode, validateTwitter
 
 ######################## TWITTER OAUTH ######################
 from requests_oauthlib import OAuth1Session
@@ -16,6 +17,7 @@ import requests
 
 _TOKEN_ = 'tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s'
 _TIMEMAX_ = 600
+_TIMEMIN_ = 90
 ######################## TWITTER OAUTH ######################
 consumer_key='Gi22eaK49RxNH9uYhJquV0v4u'
 consumer_secret= 'rQJKpa4p8j8Pc1Ju9llERSDyCcj6NuKwyXrGJy4wHFYcDIU923'
@@ -52,10 +54,17 @@ app.secret_key = os.urandom(50)
 #CORS(app, supports_credentials=True)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+
+
 ######################## TWITTER OAUTH ######################
 @app.route("/", methods=["GET"])
 def index():
-    
+    session['8000'] = False
+    session['8001'] = False
+    session['8002'] = False
+    session['8003'] = False
+    session['8004'] = False
+    session['8005'] = False
     ip = '%s' % request.remote_addr
     ip = ip.replace('.', '')
     
@@ -125,20 +134,91 @@ def callback():
     json_response = response.json()
     print(json_response)
 
+    mId = json_response['data']['id']
+    mUsername = json_response['data']['username']
+    
+    validTwitter = validateTwitter(mId, mUsername)
+    if(validTwitter['twitterexist']):
+        if(not validTwitter['twittervalid']):
+            return redirect('%s/?token=%s&twitteralert=true&error=user_twitter_exist&username=%s'%(web_url, _TOKEN_, mUsername))
+        
     #http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username=lii_mmminseon5
-    resp = requests.get('http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
-    if resp.status_code != 200:
-        raise Exception(
-            "Request returned an error: {} {}".format(
-                resp.status_code, resp.text
-            )
-        )
+    ind = 0  
+    while 1:
+        print("se hizo break por 10 %s" % ind)
+        if(ind == 10):
+            print("se hizo break por 10")
+            break
+        if(not session['8001']):
+            session['8001'] = True
+            print("se envio la peticion")
+            resp = requests.get('http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+            session['8001'] = False
+            if resp.status_code != 200:
+                print(resp.text)
+            else:
+                if(resp.json()['response'] == 'service_in_use'):
+                    pass
+                else:
+                    break
+        
+        """
+        if(not session['8002']):
+            session['8002'] = True
+            resp = requests.get('http://localhost:5002/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+            session['8002'] = False
+            if resp.status_code != 200:
+                print(resp.text)
+            else:
+                if(resp.json()['response'] == 'service_in_use'):
+                    pass
+                else:
+                    break
+
+        if(not session['5003']):
+            session['5003'] = True
+            resp = requests.get('http://localhost:5003/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+            session['5003'] = False
+            if resp.status_code != 200:
+                print(resp.text)
+            else:
+                if(resp.json()['response'] == 'service_in_use'):
+                    pass
+                else:
+                    break
+
+        if(not session['5004']):
+            session['5004'] = True
+            resp = requests.get('http://localhost:5004/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+            session['5004'] = False
+            if resp.status_code != 200:
+                print(resp.text)
+            else:
+                if(resp.json()['response'] == 'service_in_use'):
+                    pass
+                else:
+                    break
+
+        if(not session['5005']):
+            session['5005'] = True
+            resp = requests.get('http://localhost:5005/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+            session['5005'] = False
+            if resp.status_code != 200:
+                print(resp.text)
+            else:
+                if(resp.json()['response'] == 'service_in_use'):
+                    pass
+                else:
+                    break
+        """
+        ind+=1
+        time.sleep(1)
+    if(ind >= 10):
+        return redirect('%s/?token=%s&twitteralert=true&error=connexion_timeout'%(web_url, _TOKEN_))
+
     jresponse = resp.json()
     isfollow = jresponse['response']
     print(jresponse)
-
-    mId = json_response['data']['id']
-    mUsername = json_response['data']['id']
 
     if(isfollow == 'username_follows'):
         mFollow = 'valid'
@@ -149,10 +229,13 @@ def callback():
 
     hash_value = calculate_sha256('%s %s %s'%(mId, mUsername, mFollow))
 
-    storeTwitter(mId, mUsername, mFollow, hash_value)
-
+    stwitter = storeTwitter(mId, mUsername, mFollow, hash_value)
+    if(stwitter):
+        return redirect('%s/?token=%s&username=%s&twitter=%s&hash=%s&twitteralert=true'%(web_url, _TOKEN_, mUsername, mFollow, hash_value))
+    else:
+        return {"response": "not_stored_twitter_user"}
     #print(json.dumps(json_response, indent=4, sort_keys=True))
-    return redirect('%s/api/twitter?token=%s&username=%s&twitter=%s&hash=%s'%(web_url, _TOKEN_, mUsername, mFollow, hash_value))
+    
 
 #############################################################
 
@@ -182,7 +265,7 @@ async def telegramget():
         hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
         print("validando desde bd %s"%valid)
         if(valid):
-            returndata = {'response': 'user_ok', 'hash': hash_value}
+            returndata = {'response': 'user_ok', 'hash': hash_value, 'id': userdata['id']}
         else:
             returndata = {'response': 'user_exist'}
     else:
@@ -219,16 +302,18 @@ async def telegram():
     
 
     if(userdata):
+        
         hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
         valid = validUserFromDb(userdata, hash_value)
         
         print("validando desde bd %s"%valid)
         if(valid):
             receiver = await client.get_input_entity(user)
-            storeCode()
+            
             message = authCode()
-            session["%s_message" % user] = message
-            session["%s_time" % user] = timestamp()
+            store = storeCode(userdata['id'], message, timestamp(), _TIMEMIN_)
+            
+            print("se envio el codigo %s " % message)
             try:
                 await client.send_message(receiver, message.format(user))
             except PeerFloodError:
@@ -236,24 +321,13 @@ async def telegram():
             except Exception as e:
                 print("[!] Error:", e)
                 print("[!] Trying to continue...")
-
-            returndata = {'response': 'user_ok', "hash": hash_value}
+            if(store["response"] == "store_code_ok"):
+                returndata = {'response': 'user_ok', 'hash': hash_value, 'id': userdata['id']}
+            else:
+                returndata = {'response': 'user_timeout'}
         else:
             returndata = {'response': 'user_exist'}
     else:
-        receiver = await client.get_input_entity(user)
-        message = authCode()
-        session['message'] = message
-        session["message_%s" % user] = "%s" % message
-        session["time_%s" % user] = "%s" % timestamp()
-        try:
-            await client.send_message(receiver, message.format(user))
-            print("se envio el message codde sin registrarse %s" % message)
-        except PeerFloodError:
-            print("[!] Getting Flood Error from telegram. \n[!] Script is stopping now. \n[!] Please try again after some time.")
-        except Exception as e:
-            print("[!] Error:", e)
-            print("[!] Trying to continue...")
         returndata = {'response': "user_not_registry"}
 
     await client.disconnect()
@@ -269,7 +343,8 @@ async def telegram():
 async def telegramCode():
     data = request.get_json()
     token = data["token"]
-    user = data["username"]
+    hash = data["hash"]
+    id = data["id"]
     code = data["code"]
     
     #time.sleep(4)
@@ -280,27 +355,22 @@ async def telegramCode():
             status=200,
             mimetype='application/json'
         )
-    print("el sms guardao es %s" % session['message'])
+    
     timeactual = timestamp()
-    msg = "message_%s" % user
-    tim = "time_%s" % user
-    message = session[msg]
-    timeant = session[tim]
-
-    session[msg] = ''
-    session[tim] = ''
-
+    
+    scode = getStoreCode(id, hash)
+    print("el sms guardao es %s" % scode[0])
     returndata = ""
 
-    timedif = timeant - timeactual
-    print("print el timedef es %s el msg %s el tim %s " % (timedif, message, timeant))
+    timedif = scode[1] - timeactual
+    print("print el timedef es %s el code %s el storecode %s el tim %s " % (timedif, code, scode[0], scode[1]))
     if(timedif <= _TIMEMAX_):
-        if(code == message):
+        if(int(code) == int(scode[0])):
             returndata = {'response': 'code_ok'}
         else:
-            returndata = {'response': 'user_error'}
+            returndata = {'response': 'code_error'}
     else:
-        returndata = {'response': 'user_error_time'}
+        returndata = {'response': 'code_error_time'}
     
 
     response = app.response_class(
@@ -328,9 +398,9 @@ def cleandb():
         params = config()
         #print(params)
 
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...')
+        conexion = mysql.connector.connect(**params)
         
         # creación del cursor
         cur = conexion.cursor()
@@ -339,7 +409,7 @@ def cleandb():
         print("se elimino la tabla correctamente")
         conexion.close()
         returndata = {'response': 'clean_bd_ok'}
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
         returndata = {'response': 'clean_bd_ok', 'data': error}
     finally:
@@ -382,9 +452,9 @@ def updatebd():
         params = config()
         #print(params)
 
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...')
+        conexion = mysql.connector.connect(**params)
         
         # creación del cursor
         cur = conexion.cursor()
@@ -399,12 +469,12 @@ def updatebd():
         userlist = cur.fetchall()
         for userid, valid in userlist :
             print("revisando la lista de los usuarios: %s valid: %s"%(userid, valid))
-        # Cierre de la comunicación con PostgreSQL
+        # Cierre de la comunicación con MySql
         conexion.close()
         print("se cerro la conexion con la base de datos")
         returndata = {'response': 'user_updated_ok'}
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
         returndata = {'response': 'user_updated_error', 'data': error}
     finally:
@@ -439,8 +509,8 @@ def getusers():
     try:
         conexion = None
         params = config()
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        print('Conectando a la base de datos MySql...')
+        conexion = mysql.connector.connect(**params)
         
         cur = conexion.cursor()
         cur.execute( "SELECT userid, valid FROM telegram" )
@@ -453,7 +523,7 @@ def getusers():
         print("se cerro la conexion con la base de datos")
         return {'response': 'user_list_ok', 'data': ListUser}
 
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
         return {'response': 'user_updated_error', 'data': error}
     finally:

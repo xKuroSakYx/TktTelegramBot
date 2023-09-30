@@ -4,7 +4,8 @@ from telethon.tl.types import InputPeerEmpty
 from configparser import ConfigParser
 import configparser
 import os, sys
-import psycopg2
+#import psycopg2
+import mysql.connector
 import hashlib
 import uuid
 from datetime import datetime
@@ -104,63 +105,72 @@ async def validateUsername(client, _group, _type, _user):
 
 def validUserFromDb(data, hash):
     try:
+        tktid = authCode(15)
         conexion = None
         #params = config()
         params = config('localdb')
         #print(params)
     
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...validateUsername')
+        conexion = mysql.connector.connect(**params)
         print("se conectpo a la base de datos")
         # creación del cursor
         cur = conexion.cursor()
         
         # creando la tabla si no existe
-        cur.execute("CREATE TABLE IF NOT EXISTS telegram (id serial not null, userid bigint not null, valid smallint not null, mhash varchar not null, primary key (id))")
+        #tktid bigint(255) not null,
+        cur.execute("CREATE TABLE IF NOT EXISTS telegram (id bigint(255) not null AUTO_INCREMENT, userid bigint(255) not null, valid int(1) not null, mhash varchar(255) not null, primary key (id))  ENGINE = InnoDB")
         #cur.execute("CREATE INDEX userids ON telegram (userid)")
 
-        cur.execute( "SELECT valid FROM telegram where userid=%s and mhash=%s", (data['id'], hash) )
+        cur.execute( "SELECT valid, mhash FROM telegram where userid=%s", (data['id'], ) )
 
         # Recorremos los resultados y los mostramos
 
         userlist = cur.fetchall()
         for valid in userlist :
             #print("el user id %s el valid %s"%(userid, valid))
-            if(valid == 0):
+            if(valid[0] == 0 and valid[1] == hash):
                 print("el usuario %s esta regisrado en el canal pero no ha recibido los token "% data['id'])
                 conexion.close()
+                #return {'valid': True, 'tktid': valid[1]}
                 return True
             
-            elif(valid == 1):
+            elif(valid[0] == 1 and valid[1] == hash):
                 print("el usuario %s ya recibio los token"% data['id'])
                 conexion.close()
+                #return {'valid': False, 'tktid': valid[1]}
                 return False
             else:
                 print("ingresando un nuevo usuario %s"% data['id'])
                 sql="insert into telegram(userid, valid, mhash) values (%s, 0, %s)"
                 datos=(data['id'], hash)
                 cur.execute(sql, datos)
+                print("se inserto la fila correctamente hash %s "% hash)
                 conexion.commit()
                 conexion.close()
+                #return {'valid': True, 'tktid': tktid}
                 return True
         
         print("ingresando un nuevo usuario final %s"% data['id'])
         sql="insert into telegram(userid, valid, mhash) values (%s, 0, %s)"
         datos=(data['id'], hash)
         cur.execute(sql, datos)
+        print("se inserto la fila correctamente final hash %s "% hash)
         conexion.commit()
         conexion.close()
+        
+        #return {'valid': True, 'tktid': tktid}
         return True
         
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
     finally:
         if conexion is not None:
             conexion.close()
             print('Conexión finalizada.')
 
-def config(seccion='postgresql', archivo='config.ini'):
+def config(seccion='MySql', archivo='config.ini'):
     # Crear el parser y leer el archivo
     parser = ConfigParser()
     parser.read(archivo)
@@ -183,14 +193,17 @@ def storeTwitter(id, user, follow, shash):
         params = config('localdb')
         #print(params)
     
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...storeTwitter')
+        conexion = mysql.connector.connect(**params)
         print("se conectpo a la base de datos")
         # creación del cursor
         cur = conexion.cursor()
+        # creando la tabla si no existe
+        cur.execute("CREATE TABLE IF NOT EXISTS twitter (id bigint(255) not null AUTO_INCREMENT , userid bigint(255) not null, username varchar(255) not null, follow varchar(50) not null, mhash varchar(255) not null, valid int(1) not null, primary key (id))")
+
         isexist = False
-        cur.execute( "SELECT userid, username, follow, mhash, valid FROM twitter where userid=%s and mhash = shash", (id, shash) )
+        cur.execute( "SELECT userid, username, follow, mhash, valid FROM twitter where userid=%s and mhash = %s", (id, shash) )
         userlist = cur.fetchall()
         for data in userlist:
             print(data[0])
@@ -198,17 +211,19 @@ def storeTwitter(id, user, follow, shash):
                 isexist = True
             
         if(isexist):
-            return "user_exist"
-        # creando la tabla si no existe
-        cur.execute("CREATE TABLE IF NOT EXISTS twitter (id serial not null, userid bigint not null, username varchar not null, follow varchar not null, mhash varchar not null, primary key (id))")
+            cur.execute( "UPDATE twitter SET username=%s, follow=%s, mhash=%s, valid=%s where userid=%s and mhash = %s", (user, follow, shash, 0, id, shash) )
+            conexion.commit()
+            conexion.close()
+            return True
         #cur.execute("CREATE INDEX userids ON telegram (userid)")
         sql="insert into twitter(userid, username, follow, mhash, valid) values (%s, %s, %s, %s, 0)"
-        datos=(id, user, follow, hash)
+        datos=(id, user, follow, shash)
         cur.execute(sql, datos)
         conexion.commit()
         conexion.close()
+        return True
         
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
     finally:
         if conexion is not None:
@@ -222,50 +237,58 @@ def validateTwitterTelegram(twitter, telegram):
         params = config('localdb')
         #print(params)
     
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...validateTwitterTelegram')
+        conexion = mysql.connector.connect(**params)
         print("se conectpo a la base de datos")
         # creación del cursor
         cur = conexion.cursor()
 
+        twitter = twitter.replace('"', '')
+        cur.execute( "SELECT valid FROM twitter where mhash=%s LIMIT 0, 1", (twitter, ) )
+        vTwitter = cur.fetchone()
+        print(vTwitter)
         twittervalid = False
         twitterexist = False
-        cur.execute( "SELECT valid FROM twitter where mhash=%s", (twitter,) )
-        userlist = cur.fetchall()
-        for valid in userlist :
+        if(vTwitter):
             twitterexist = True
-            if(valid == 0):
+            if(vTwitter[0] == 0):
                 twittervalid = True
-            elif(valid == 1):
+            elif(vTwitter[0] == 1):
                 twittervalid = False
-        
 
+        if(twittervalid):
+            cur.execute( "UPDATE twitter SET valid=1 where mhash=%s", (twitter,) )
+            conexion.commit()
+            print("______Se teteo ese userr a valid 1 en twitter_______")
         ################################ TELEGRAM #################################
         
         # creación del cursor
         #cur = conexion.cursor()
         
         # creando la tabla si no existe
-        
-        cur.execute( "SELECT valid FROM telegram where mhash=%s", (hash,) )
-
-        # Recorremos los resultados y los mostramos
-
-        userlist = cur.fetchall()
-
+        telegram = telegram.replace('"', '')
+        print("__________%s____________"%telegram)
+        cur.execute( "SELECT valid FROM telegram where mhash=%s", (telegram,) )
+        vTelegram = cur.fetchone()
+        print(vTelegram)
         telegramvalid = False
         telegramexist = False
-        for valid in userlist :
+        if(vTelegram):
             telegramexist = True
-            if(valid == 0):
+            if(vTelegram[0] == 0):
                 telegramvalid = True
-            elif(valid == 1):
+            elif(vTelegram[0] == 1):
                 telegramvalid = False
+
+        if(telegramvalid):
+            cur.execute( "UPDATE telegram SET valid=1 where mhash=%s", (telegram,) )
+            conexion.commit()
+            print("______Se teteo ese userr a valid 1 en telegram_______")
 
         return {"twitterexist": twitterexist, "twittervalid": twittervalid, "telegramexist": telegramexist, "telegramvalid": telegramvalid}
         
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
     finally:
         if conexion is not None:
@@ -280,14 +303,14 @@ def validateWallet(wallet, referido):
         params = config('localdb')
         #print(params)
     
-        # Conexion al servidor de PostgreSQL
-        print('Conectando a la base de datos PostgreSQL...')
-        conexion = psycopg2.connect(**params)
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...validateWallet')
+        conexion = mysql.connector.connect(**params)
         print("se conectpo a la base de datos")
         # creación del cursor
         cur = conexion.cursor()
         isexist = False
-        cur.execute("CREATE TABLE IF NOT EXISTS metamask (id serial not null, refid varchar not null, wallet varchar not null, tokens bigint not null, referidos bigint not null, refpaid bigint not null, paid smallint not null, primary key (id))")
+        cur.execute("CREATE TABLE IF NOT EXISTS metamask (id bigint(255) not null AUTO_INCREMENT, refid varchar(255) not null, wallet varchar(255) not null, tokens bigint(255) not null, referidos bigint(255) not null, refpaid bigint(255) not null, paid int(1) not null, primary key (id))")
         #cur.execute("CREATE INDEX userids ON telegram (userid)")
         conexion.commit()
 
@@ -323,7 +346,7 @@ def validateWallet(wallet, referido):
         print("se actualizo los referidos id %s " % referido)
         return ("ok", "otra cosa", redif)
         
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception) as error:
         print(error)
     finally:
         if conexion is not None:
@@ -341,11 +364,135 @@ def calculate_sha256(data):
     
     return sha256_hash
 
-def authCode():
-    numeros = map(lambda x: random.randint(1, 9), range(6))
+def authCode(largo=6):
+    numeros = map(lambda x: random.randint(1, 9), range(largo))
     return reduce(lambda x, y: str(x) + str(y), numeros)
 
 def timestamp():
     fecha = "%s" % datetime.now()
     timeret = time.mktime(datetime.strptime(fecha[:19], "%Y-%m-%d %H:%M:%S").timetuple())
     return timeret
+
+def storeCode(id, code, stime, mintime):
+    try:
+        conexion = None
+        #params = config()
+        params = config('localdb')
+        #print(params)
+    
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql... storeCode')
+        conexion = mysql.connector.connect(**params)
+        print("se conectpo a la base de datos")
+        # creación del cursor
+        cur = conexion.cursor()
+        print("utilizando update time ")
+        # creando la tabla si no existe
+        cur.execute("CREATE TABLE IF NOT EXISTS telegramcode (id bigint(255) not null AUTO_INCREMENT , userid bigint(255) not null, code bigint(255) not null, fecha int(11) not null, primary key (id))")
+        #cur.execute("CREATE INDEX userids ON telegram (userid)")
+        
+        cur.execute( "SELECT fecha FROM telegramcode where userid=%s", (id, ))
+        codes = cur.fetchall()
+        
+        for cod in codes:
+            print("utilizando update time %s "% cod)
+            if((stime - cod[0]) > mintime):
+                sql="UPDATE telegramcode SET code=%s, fecha=%s WHERE userid=%s;"
+                datos=(code, stime, id)
+                cur.execute(sql, datos)
+                conexion.commit()
+                conexion.close()
+                return {"response": "store_code_ok"}
+            else:
+                return {"response": "store_code_timeout"}
+                
+        print("insertando nueva fila")
+        sql="insert into telegramcode (userid, code, fecha) values (%s, %s, %s)"
+        datos=(id, code, stime)
+        cur.execute(sql, datos)
+        conexion.commit()
+        conexion.close()
+        return {"response": "store_code_ok"}
+
+    except (Exception) as error:
+        print(error)
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
+
+def getStoreCode(id, hash):
+    try:
+        conexion = None
+        #params = config()
+        params = config('localdb')
+        #print(params)
+    
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...getStoreCode')
+        conexion = mysql.connector.connect(**params)
+        print("se conectpo a la base de datos")
+        # creación del cursor
+        cur = conexion.cursor()
+        
+        #cur.execute( "SELECT userid FROM telegram where mhash=%s", (hash, ) )
+        hash = str(hash.replace('"', ""))
+        print("__________________%s_________________" % hash)
+        cur.execute( "SELECT userid FROM telegram where mhash=%s", (hash, ))
+        # Recorremos los resultados y los mostramos
+        ids = cur.fetchone()
+        print("_____________________%s____________________"%ids)
+        
+        cur.execute( "SELECT code, fecha FROM telegramcode where userid=%s", (ids[0], ) )
+        print("______________________________________-")
+        # Recorremos los resultados y los mostramos
+        codelist = cur.fetchone()
+        code = codelist[0]
+        fecha = codelist[1]
+        print("los codigos son %s, time %s " % (code, fecha))
+        return (code, fecha)
+
+    except (Exception) as error:
+        print(error)
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
+
+def validateTwitter(id, username):
+    try:
+        conexion = None
+        #params = config()
+        params = config('localdb')
+        #print(params)
+    
+        # Conexion al servidor de MySql
+        print('Conectando a la base de datos MySql...validateTwitter')
+        conexion = mysql.connector.connect(**params)
+        print("se conectpo a la base de datos")
+        # creación del cursor
+        cur = conexion.cursor()
+
+        cur.execute( "SELECT valid FROM twitter where userid=%s AND username=%s LIMIT 0, 1", (id, username) )
+        vTwitter = cur.fetchone()
+        print(vTwitter)
+        twittervalid = False
+        twitterexist = False
+        if(vTwitter):
+            twitterexist = True
+            if(vTwitter[0] == 0):
+                twittervalid = True
+            elif(vTwitter[0] == 1):
+                twittervalid = False
+
+        return {"twitterexist": twitterexist, "twittervalid": twittervalid}
+        
+    except (Exception) as error:
+        print(error)
+    finally:
+        if conexion is not None:
+            conexion.close()
+            print('Conexión finalizada.')
+#"08122b7065a6e80e465709a380af57c69ecde1fd27f5a05d8c1c1474f1ce27e6"
+
+#"9bbd6b6168abcde2e492529519f91eab59210c423c2d45b3f76e4b2cf62dd0f3"
