@@ -59,12 +59,12 @@ cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 ######################## TWITTER OAUTH ######################
 @app.route("/", methods=["GET"])
 def index():
-    session['8000'] = False
-    session['8001'] = False
-    session['8002'] = False
-    session['8003'] = False
-    session['8004'] = False
-    session['8005'] = False
+    #session['8000'] = False
+    #session['8001'] = False
+    #session['8002'] = False
+    #session['8003'] = False
+    #session['8004'] = False
+    #session['8005'] = False
     ip = '%s' % request.remote_addr
     ip = ip.replace('.', '')
     
