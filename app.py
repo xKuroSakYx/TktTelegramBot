@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, session, url_for, render_template
+from flask import Flask, request, redirect, session, send_file
 from flask_cors import CORS
 from telethon.errors.rpcerrorlist import PeerFloodError
 import os
@@ -6,8 +6,9 @@ import asyncio
 #import psycopg2
 import mysql.connector
 import time
+import csv
 
-from config.config import startConnection, validateUsername, validUserFromDb, config, calculate_sha256, storeTwitter, validateTwitterTelegram, validateWallet, authCode, timestamp, storeCode, getStoreCode, validateTwitter
+from config.config import startConnection, validateUsername, validUserFromDb, config, calculate_sha256, storeTwitter, validateTwitterTelegram, validateWallet, authCode, timestamp, storeCode, getStoreCode, validateTwitter, getWallets
 
 ######################## TWITTER OAUTH ######################
 from requests_oauthlib import OAuth1Session
@@ -16,12 +17,15 @@ import requests
 #############################################################
 
 _TOKEN_ = 'tktk9wv7I8UU26FGGhtsSyMgZv8caqygNgPVMrdDw02IZlnRhbK3s'
+_TOKEN_ADMIN_ = 'tktktsSyMgZv8caqyg9wtsSyMgZv8caqygGGhtsStsSyMgZv8caqygyMgZv8caqygNgPVMrdDw02IZlnRhbK3sMrdDw02IZlnRhbK3s'
+_USERADMIN_ = "Eric"
 _TIMEMAX_ = 600
 _TIMEMIN_ = 90
 ######################## TWITTER OAUTH ######################
 consumer_key='Gi22eaK49RxNH9uYhJquV0v4u'
 consumer_secret= 'rQJKpa4p8j8Pc1Ju9llERSDyCcj6NuKwyXrGJy4wHFYcDIU923'
 
+#web_url = "https://x6nge.com"
 web_url = "http://localhost:8080"
 request_token_url = "https://api.twitter.com/oauth/request_token"
 access_token_url = "https://api.twitter.com/oauth/access_token"
@@ -38,16 +42,6 @@ params = {"user.fields": fields}
 # postgres://telegrambot_tkt_user:7p2uqGFWiPARqzIyEsOcsqRv00C0g50e@dpg-ck68gl5drqvc73bj9kpg-a.oregon-postgres.render.com/telegrambot_tkt
 # gunicorn --bind 0.0.0.0:8000 app:app
 
-
-"""
-task = asyncio.create_task(startConnection())
-res = await asyncio.shield(task)
-while True:
-   
-    if task.done():
-        client = task.result()
-        break
-"""
 
 app = Flask(__name__, instance_relative_config=False)
 app.secret_key = os.urandom(50)
@@ -145,75 +139,91 @@ def callback():
     #http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username=lii_mmminseon5
     ind = 0  
     while 1:
-        print("se hizo break por 10 %s" % ind)
-        if(ind == 10):
-            print("se hizo break por 10")
+        #print("se hizo break por 10 %s" % ind)
+        if(ind == 3):
+            #print("se hizo break por 10")
             break
-        if(not session['8001']):
-            session['8001'] = True
-            print("se envio la peticion")
-            resp = requests.get('http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
-            session['8001'] = False
-            if resp.status_code != 200:
-                print(resp.text)
-            else:
-                if(resp.json()['response'] == 'service_in_use'):
+        try:
+            if(not session['5001']):
+                session['5001'] = True
+                #print("se envio la peticion")
+                resp = requests.get('http://localhost:5001/auth?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                session['5001'] = False
+                if resp.status_code != 200:
                     pass
+                    #print(resp.text)
                 else:
-                    break
-        
-        """
-        if(not session['8002']):
-            session['8002'] = True
-            resp = requests.get('http://localhost:5002/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
-            session['8002'] = False
-            if resp.status_code != 200:
-                print(resp.text)
-            else:
-                if(resp.json()['response'] == 'service_in_use'):
-                    pass
-                else:
-                    break
+                    if(resp.json()['response'] == 'service_in_use'):
+                        pass
+                    else:
+                        break
+        except:
+            session['5001'] = False
 
-        if(not session['5003']):
-            session['5003'] = True
-            resp = requests.get('http://localhost:5003/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+        try:
+            if(not session['5002']):
+                session['5002'] = True
+                resp = requests.get('http://localhost:5002/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                session['5002'] = False
+                if resp.status_code != 200:
+                    pass
+                else:
+                    if(resp.json()['response'] == 'service_in_use'):
+                        pass
+                    else:
+                        break
+        except:
+            session['5002'] = False
+
+        try:
+            if(not session['5003']):
+                session['5003'] = True
+                resp = requests.get('http://localhost:5003/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                session['5003'] = False
+                if resp.status_code != 200:
+                    pass
+                    #print(resp.text)
+                else:
+                    if(resp.json()['response'] == 'service_in_use'):
+                        pass
+                    else:
+                        break
+        except:
             session['5003'] = False
-            if resp.status_code != 200:
-                print(resp.text)
-            else:
-                if(resp.json()['response'] == 'service_in_use'):
+
+        try:
+            if(not session['5004']):
+                session['5004'] = True
+                resp = requests.get('http://localhost:5004/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                session['5004'] = False
+                if resp.status_code != 200:
                     pass
                 else:
-                    break
-
-        if(not session['5004']):
-            session['5004'] = True
-            resp = requests.get('http://localhost:5004/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                    if(resp.json()['response'] == 'service_in_use'):
+                        pass
+                    else:
+                        break
+        except:
             session['5004'] = False
-            if resp.status_code != 200:
-                print(resp.text)
-            else:
-                if(resp.json()['response'] == 'service_in_use'):
-                    pass
-                else:
-                    break
 
-        if(not session['5005']):
-            session['5005'] = True
-            resp = requests.get('http://localhost:5005/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
-            session['5005'] = False
-            if resp.status_code != 200:
-                print(resp.text)
-            else:
-                if(resp.json()['response'] == 'service_in_use'):
+        try:
+            if(not session['5005']):
+                session['5005'] = True
+                resp = requests.get('http://localhost:5005/navigate?token=tktk9wv7I8UU26FGGhtsSyMgZvmco8caqygNgPVMrdDw02IZlnRhbK3s&username={}'.format(json_response['data']['username']))
+                session['5005'] = False
+                if resp.status_code != 200:
                     pass
                 else:
-                    break
-        """
+                    if(resp.json()['response'] == 'service_in_use'):
+                        pass
+                    else:
+                        break
+        except:
+            session['5005'] = False
+        
         ind+=1
         time.sleep(1)
-    if(ind >= 10):
+    if(ind >= 3):
         return redirect('%s/?token=%s&twitteralert=true&error=connexion_timeout'%(web_url, _TOKEN_))
 
     jresponse = resp.json()
@@ -227,7 +237,7 @@ def callback():
     elif(isfollow == 'username_not_exist'):
         mFollow = 'notexist'
 
-    hash_value = calculate_sha256('%s %s %s'%(mId, mUsername, mFollow))
+    hash_value = calculate_sha256('%s' % mId)
 
     stwitter = storeTwitter(mId, mUsername, mFollow, hash_value)
     if(stwitter):
@@ -239,13 +249,14 @@ def callback():
 
 #############################################################
 
+
 @app.route('/api/telegram', methods=["GET"])
 async def telegramget():
     token = request.args.get('token')
     user = request.args.get('user')
     group = request.args.get('group')
     type = request.args.get('type')
-    print(token+" "+user+" "+group+" "+type)
+    #print(token+" "+user+" "+group+" "+type)
 
     if(_TOKEN_ != token):
         return app.response_class(
@@ -262,8 +273,8 @@ async def telegramget():
 
     if(userdata):
         valid = validUserFromDb(userdata)
-        hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
-        print("validando desde bd %s"%valid)
+        hash_value = calculate_sha256("%s" % userdata['id'])
+        #print("validando desde bd %s"%valid)
         if(valid):
             returndata = {'response': 'user_ok', 'hash': hash_value, 'id': userdata['id']}
         else:
@@ -285,7 +296,7 @@ async def telegram():
     token = data["token"]
     group = data["group"]
     type = data["type"]
-    print(token+" "+user+" "+group+" "+type)
+    #print(token+" "+user+" "+group+" "+type)
     #time.sleep(4)
     #return {'response': 'user_ok', 'data': "okok"}
     if(_TOKEN_ != token):
@@ -303,7 +314,7 @@ async def telegram():
 
     if(userdata):
         
-        hash_value = calculate_sha256("%s %s %s" % (userdata['id'], userdata['name'], userdata['username']))
+        hash_value = calculate_sha256("%s" % userdata['id'])
         valid = validUserFromDb(userdata, hash_value)
         
         print("validando desde bd %s"%valid)
@@ -313,14 +324,16 @@ async def telegram():
             message = authCode()
             store = storeCode(userdata['id'], message, timestamp(), _TIMEMIN_)
             
-            print("se envio el codigo %s " % message)
+            #print("se envio el codigo %s " % message)
             try:
                 await client.send_message(receiver, message.format(user))
             except PeerFloodError:
-                print("[!] Getting Flood Error from telegram. \n[!] Script is stopping now. \n[!] Please try again after some time.")
+                pass
+                #print("[!] Getting Flood Error from telegram. \n[!] Script is stopping now. \n[!] Please try again after some time.")
             except Exception as e:
-                print("[!] Error:", e)
-                print("[!] Trying to continue...")
+                pass
+                #print("[!] Error:", e)
+                #print("[!] Trying to continue...")
             if(store["response"] == "store_code_ok"):
                 returndata = {'response': 'user_ok', 'hash': hash_value, 'id': userdata['id']}
             else:
@@ -582,6 +595,76 @@ async def wallet():
         status=200,
         mimetype='application/json'
     )
+    return response
+
+@app.route('/api/getwallets', methods=["GET"])
+async def getwallet():
+
+    token = request.args.get('token')
+    user = request.args.get('user')
+
+    #return {'response': 'user_ok', 'data': "okok"}
+    if(_TOKEN_ADMIN_ != token):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    if(user != _USERADMIN_):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Username'}),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    csvWallet = getWallets(os.getcwd()+"\csv")
+
+    response = app.response_class(
+        response=json.dumps({'response': 'No Se pudo Devolver el archivo intente de nuevo'}),
+        status=200,
+        mimetype='application/json'
+    )
+
+    if csvWallet:
+        file_path = os.path.join(app.config['BASE_DIR'], csvWallet)
+        return send_file(file_path)
+    else:
+        return response
+    
+@app.route('/api/getwalletscsv', methods=["GET"])
+async def getwalletcsv():
+
+    token = request.args.get('token')
+    user = request.args.get('user')
+    day = request.args.get('day')
+    mes = request.args.get('mont')
+    year = request.args.get('year')
+
+    #return {'response': 'user_ok', 'data': "okok"}
+    if(_TOKEN_ADMIN_ != token):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Token'}),
+            status=200,
+            mimetype='application/json'
+        )
+    if(user != _USERADMIN_):
+        return app.response_class(
+            response=json.dumps({'response': 'invalid Username'}),
+            status=200,
+            mimetype='application/json'
+        )
+    
+    
+    filename = os.path.join(os.getcwd()+"\csv", "wallets_%s_%s_%s.csv" % (day, mes, year))
+    if(os.path.isfile(filename)):
+         return send_file(filename)
+    else:
+        response = app.response_class(
+            response=json.dumps({'response': 'No se pudo encontrar el archivo %s ' % filename}),
+            status=200,
+            mimetype='application/json'
+        )
     return response
 ########################################################
 @app.after_request
