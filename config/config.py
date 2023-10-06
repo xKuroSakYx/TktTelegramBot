@@ -108,7 +108,7 @@ def validUserFromDb(data, hash):
         tktid = authCode(15)
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -190,7 +190,7 @@ def storeTwitter(id, user, follow, shash):
     try:
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -236,7 +236,7 @@ def validateTwitterTelegram(twitter, telegram):
     try:
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -302,7 +302,7 @@ def validateWallet(wallet, referido):
         redif = "%s%s"%(uuid.uuid4().hex, uuid.uuid4().hex)
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -450,7 +450,7 @@ def storeCode(id, code, stime, mintime):
     try:
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -498,7 +498,7 @@ def getStoreCode(id, hash):
     try:
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
@@ -536,7 +536,7 @@ def validateTwitter(id, username):
     try:
         conexion = None
         #params = config()
-        params = config('localdb')
+        params = config('x6nge')
         #print(params)
     
         # Conexion al servidor de MySql
